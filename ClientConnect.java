@@ -29,30 +29,18 @@ public class ClientConnect {
         try{
             clientSocket = new Socket(ip,1995);
 //            System.out.println(1);
-            DataOutputStream os;
-       os = new DataOutputStream(
-                clientSocket.getOutputStream());   
-       BufferedReader is = new BufferedReader(
-                new InputStreamReader(clientSocket.getInputStream()));
-       System.out.println("Gui:");
-       int ch = System.in.read();
-       os.writeInt(ch);
-       
-       String ch2 = is.readLine();
-       
-       System.out.println("nhan: "+ch2);
         //from server	
-        BufferedReader inFromServer = new BufferedReader(
-                new InputStreamReader(clientSocket.getInputStream()));
+        DataInputStream inFromServer = new DataInputStream(
+               clientSocket.getInputStream());
         
         //out to server the hit or miss message
         DataOutputStream outToServer = new DataOutputStream(
                 clientSocket.getOutputStream());
 
-        System.out.println("Your name: "+p2.getName());
-        outToServer.writeBytes(p2.getName());
+        outToServer.writeUTF(p2.getName());
             outToServer.flush();
-        
+                System.out.println(inFromServer.readUTF());
+
         //create the board
         board gameBoard = new board();
         //player is asked to add the ships to the board
@@ -86,25 +74,39 @@ public class ClientConnect {
         }
 
         gameBoard.printBoard();
-
+        System.out.println("Wait P1...");
+outToServer.writeInt(1);
+            outToServer.flush();
+        while(true){
+            int state = inFromServer.readInt();
+            if(state == 1){
+                                break;
+            }
+        }
+        System.out.println("BEGIN");
         ////////////////////////////////////
         //game starts
         ////////////////////////////////////
         
-
+int round=1;
         while (true) {
             int hitRow;
             int hitCol;
+            System.out.println("Round "+round);
+            round++;
             //the client sends a hit
+            System.out.println("Please send hit:");
             sentence = inFromUser.readLine();
+            System.out.println(" sent hit:"+sentence);
             outToServer.writeBytes(sentence + "\n");
             outToServer.flush();
             //the client receives a hit from the server
+            System.out.println("Turn P1");
             modifiedSentence = inFromServer.readLine();
-            System.out.println("Result from server: " + modifiedSentence);
+            System.out.println("Result from P1: " + modifiedSentence);
 
             modifiedSentence = inFromServer.readLine();
-            System.out.println("Hit from server: " + modifiedSentence);
+            System.out.println("Hit from P1: " + modifiedSentence);
             int clientInt = Integer.parseInt(modifiedSentence);
             hitRow = Math.abs(clientInt / 10) - 1;
             hitCol = clientInt % 10 - 1;

@@ -60,29 +60,21 @@ public class TCPServer {
         serverSocket = welcomeSocket.accept();
         
         System.out.println("P2 is on!");
-        OutputStream os;
-       os = serverSocket.getOutputStream();    
-       InputStream is = serverSocket.getInputStream();
-    //nhan 1 ki tu tu client
-    int ch = is.read();
-        System.out.println("server nhan: "+ch);
-        System.out.println("server gui: ");
-        int ch2 = System.in.read();
-        os.write(ch2);
+       
         //from client
-        BufferedReader inFromClient = new BufferedReader(
-                new InputStreamReader(serverSocket.getInputStream()));
+        DataInputStream inFromClient = new DataInputStream(
+                serverSocket.getInputStream());
 
         //out to client the hit or miss message
         DataOutputStream outToClient1
                 = new DataOutputStream(serverSocket.getOutputStream());
 
         //get p2 name
-        
-        String p2Name = inFromClient.readLine();
-        outToClient1.writeBytes("Wellcome "+p2Name);
+        Player p2 = new Player();
+        p2.setName(inFromClient.readUTF());
+        outToClient1.writeUTF("Wellcome "+p2.getName());
                 outToClient1.flush();
-        System.out.println("Player is "+p2Name);
+        System.out.println("Player is "+p2.getName());
         
         
         //create the board
@@ -119,19 +111,32 @@ public class TCPServer {
         }
 
         gameBoard.printBoard();
+        System.out.println("Wait P2...");
+        while(true){
+            int state = inFromClient.readInt();
+            if(state == 1){
+                outToClient1.writeInt(1);
+                outToClient1.flush();
+                                break;
+
+            }
+        }
+        System.out.println("BEGIN");
         ////////////////////////////////////
         //game starts
         ////////////////////////////////////
-        
+        int round=1;
         //play
         while (true) {
             int hitRow;
             int hitCol;
-
+            System.out.println("Round "+round);
+            round++;
             //the server receives a hit from the client 
             //and replies with a hit or miss
+            System.out.println("Turn P2");
             clientSentence = inFromClient.readLine();
-            System.out.println("Hit from client: " + clientSentence);
+            System.out.println("Hit from P2: " + clientSentence);
             int clientInt = Integer.parseInt(clientSentence);
             hitRow = Math.abs(clientInt / 10) - 1;
             hitCol = clientInt % 10 - 1;
@@ -141,22 +146,24 @@ public class TCPServer {
                 if (gameBoard.testLoss() == false) {
                     hit = miss = "You won!";
                     System.out.println("Sorry, you lost!");
+                    break;
                 }
                 outToClient1.writeBytes(hit + "\n");
                 outToClient1.flush();
+
             } else {
                 outToClient1.writeBytes(miss + "\n");
                 outToClient1.flush();
-                break;
             }
 
             //the server sends a hit
+            System.out.println("Please send hit: ");
             String newS = inFromUser.readLine();
             outToClient1.writeBytes(newS + "\n");
             outToClient1.flush();
 
             clientSentence = inFromClient.readLine();
-            System.out.println("Result from client: " + clientSentence);
+            System.out.println("Result from P2: " + clientSentence);
 
         }
         }catch(IOException e){}
