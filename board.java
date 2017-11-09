@@ -1,9 +1,11 @@
+package battleship;
+
 //Author: Andrei Ghenoiu
 //Fall 2011 Networks class
 //if you have any questions contact me at andrei_stefang@yahoo.com
 
 
-public class board {
+public class board{
 	public int[][] board;
 	//this will hold info if the boat can be created
 	public boolean boatBool;
