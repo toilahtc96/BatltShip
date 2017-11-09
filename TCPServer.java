@@ -11,7 +11,73 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class TCPServer {
+// Declare the JDBC objects.  
+        
+    protected static void saveToDataBase(String name,int result){
+        System.out.println("save..."+name);
+        Connection con = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        // Create a variable for the connection string.  
+        String connectionUrl = "jdbc:sqlserver://localhost:1433;"
+                + "databaseName=battleship;user=sa;password=1";
+        try {
+            // Establish the connection.  
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            con = DriverManager.getConnection(connectionUrl);
+            //check if exist
+            String sql = "SELECT name, win, game FROM Player WHERE name='"+name+"'";
+            stmt = con.createStatement();
+            rs = stmt.executeQuery(sql);
+            if(!rs.wasNull()){
+                while(rs.next()){
+         //Retrieve by column name
+         int win  = rs.getInt("win");
+         win +=result;
+         int game = rs.getInt("game");
+         game++;
+         //Update record
+         String SQL = "UPDATE Player " +
+"SET win='"+win+"', game='"+game+"' " +
+"WHERE name='"+name+"'";
+                stmt = con.createStatement();
+                stmt.executeUpdate(SQL);
+                return;
+      }
+            }
+            //Add new 
+            
+                String SQL = "INSERT INTO Player (name, win,game)\n" +
+"VALUES ('"+name+"','"+result+"','"+0+"')";
+                stmt = con.createStatement();
+                stmt.executeUpdate(SQL);
 
+        } // Handle any errors that may have occurred.  
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+         finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (Exception e) {
+                }
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (Exception e) {
+                }
+            }
+            if (con != null) {
+                try {
+                    con.close();
+                } catch (Exception e) {
+                }
+            }
+        }
+        
+    }
     /**
      * @param args
      */
@@ -21,35 +87,23 @@ public class TCPServer {
         String serverSentence;
         ServerSocket welcomeSocket;
         Socket serverSocket;
-
-        String miss = "miss";
-        String hit = "hit";
-        String won = "won";
+        
+        int whoWin = 0;
+        String miss = "MISSSSSSSSS";
+        String hit = "HITTTTTTTTT";
+        String won = "WONNNNNNN";
         boolean turn = true;
         //Connect Database
-        // Create a variable for the connection string.  
-        String connectionUrl = "jdbc:sqlserver://localhost:1433;"
-                + "databaseName=battleship;user=sa;password=1";
+        
 
-        // Declare the JDBC objects.  
-        Connection con = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        try {
-            // Establish the connection.  
-            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            con = DriverManager.getConnection(connectionUrl);
-
-        } // Handle any errors that may have occurred.  
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+        
 
         //from command line
         BufferedReader inFromUser = new BufferedReader(
                 new InputStreamReader(System.in));
         //login p1 name
         Player p1 = new Player();
+        p1.setWin(0);
         System.out.println("Please enter your name:");
         p1.setName(inFromUser.readLine());
 
@@ -71,6 +125,7 @@ public class TCPServer {
 
         //get p2 name
         Player p2 = new Player();
+        p2.setWin(0);
         p2.setName(inFromClient.readUTF());
         outToClient1.writeUTF("Wellcome "+p2.getName());
                 outToClient1.flush();
@@ -145,6 +200,9 @@ public class TCPServer {
                 gameBoard.testLoss();
                 if (gameBoard.testLoss() == false) {
                     hit = miss = "You won!";
+                    whoWin = 2;
+                    outToClient1.writeBytes(hit + "\n");
+                outToClient1.flush();
                     System.out.println("Sorry, you lost!");
                     break;
                 }
@@ -163,41 +221,24 @@ public class TCPServer {
             outToClient1.flush();
 
             clientSentence = inFromClient.readLine();
+            if(clientSentence.equals("You won!")){
+                System.out.println("You won!");
+                whoWin =1;
+                break;
+            }
             System.out.println("Result from P2: " + clientSentence);
 
         }
+        
+        if(whoWin == 1)
+            p1.setWin(1);
+        else
+            p2.setWin(1);
+        saveToDataBase(p1.getName(), p1.getWin());
+         saveToDataBase(p2.getName(), p2.getWin());
+         System.out.println("Save.");
         }catch(IOException e){}
-        //save to database
-        try {
-            for (int i = 0; i < 2; i++) {
-                String SQL = "SELECT TOP 10 * FROM MatHang";
-                stmt = con.createStatement();
-                rs = stmt.executeQuery(SQL);
-            }
-
-        } // Handle any errors that may have occurred.  
-        catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (Exception e) {
-                }
-            }
-            if (stmt != null) {
-                try {
-                    stmt.close();
-                } catch (Exception e) {
-                }
-            }
-            if (con != null) {
-                try {
-                    con.close();
-                } catch (Exception e) {
-                }
-            }
-        }
+        
     }
 
 }

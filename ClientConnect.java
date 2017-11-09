@@ -15,8 +15,8 @@ public class ClientConnect {
         String modifiedSentence;
         Socket clientSocket;
         Socket hitOrMiss;
-        String miss = "miss";
-        String hit = "hit";
+        String miss = "MISSSSSSSSSSSSS";
+        String hit = "HITTTTTTTTT";
 
         //from command line
         BufferedReader inFromUser = new BufferedReader(
@@ -101,10 +101,11 @@ int round=1;
             outToServer.writeBytes(sentence + "\n");
             outToServer.flush();
             //the client receives a hit from the server
-            System.out.println("Turn P1");
             modifiedSentence = inFromServer.readLine();
             System.out.println("Result from P1: " + modifiedSentence);
-
+                        if(modifiedSentence.equals("You won!"))
+break;
+System.out.println("Turn P1");
             modifiedSentence = inFromServer.readLine();
             System.out.println("Hit from P1: " + modifiedSentence);
             int clientInt = Integer.parseInt(modifiedSentence);
@@ -115,7 +116,10 @@ int round=1;
                 gameBoard.testLoss();
                 if (gameBoard.testLoss() == false) {
                     hit = miss = "You won!";
+                    outToServer.writeBytes(hit + "\n");
+                outToServer.flush();
                     System.out.println("Sorry, you lost!");
+                    break;
                 }
                 outToServer.writeBytes(hit + "\n");
                 outToServer.flush();
